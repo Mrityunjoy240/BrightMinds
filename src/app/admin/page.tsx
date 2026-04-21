@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   GraduationCap, Home, Users, BookOpen, FileText, ClipboardList, 
-  Bell, Settings, LogOut, Plus, Trash2, Edit, Search, UserPlus
+  Bell, Settings, LogOut, Plus, Trash2, Edit, Search, UserPlus, Menu, X
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -30,43 +30,65 @@ const menuItems = [
   { id: "announcements", icon: Bell, label: "Announcements" },
 ];
 
-function Sidebar({ activeSection, setActiveSection, onLogout }: { activeSection: string; setActiveSection: (id: string) => void; onLogout: () => void }) {
+function Sidebar({ activeSection, setActiveSection, onLogout, isOpen, onClose }: { activeSection: string; setActiveSection: (id: string) => void; onLogout: () => void; isOpen: boolean; onClose: () => void }) {
   return (
-    <aside className="w-64 bg-slate-900 text-white min-h-screen flex flex-col">
-      <div className="p-5 border-b border-slate-700">
-        <div className="flex items-center gap-2 text-xl font-extrabold">
-          <GraduationCap className="w-7 h-7 text-blue-400" />
-          <span>Bright<span className="text-blue-400">Minds</span></span>
-        </div>
-        <p className="text-xs text-slate-400 mt-1">Admin Panel</p>
-      </div>
-      <nav className="flex-1 p-4 space-y-1">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveSection(item.id)}
-            className={clsx(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
-              activeSection === item.id 
-                ? "bg-blue-600 text-white" 
-                : "text-slate-300 hover:bg-slate-800"
-            )}
-          >
-            <item.icon className="w-5 h-5" />
-            {item.label}
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={onClose}
+          />
+        )}
+      </AnimatePresence>
+      
+      <aside className={clsx(
+        "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white min-h-screen flex flex-col transition-transform duration-300 lg:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="p-5 border-b border-slate-700 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-xl font-extrabold">
+              <GraduationCap className="w-7 h-7 text-blue-400" />
+              <span>Bright<span className="text-blue-400">Minds</span></span>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">Admin Panel</p>
+          </div>
+          <button onClick={onClose} className="lg:hidden p-1">
+            <X className="w-5 h-5 text-slate-400" />
           </button>
-        ))}
-      </nav>
-      <div className="p-4 border-t border-slate-700">
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-slate-800 transition-all"
-        >
-          <LogOut className="w-5 h-5" />
-          Logout
-        </button>
-      </div>
-    </aside>
+        </div>
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => { setActiveSection(item.id); onClose(); }}
+              className={clsx(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
+                activeSection === item.id 
+                  ? "bg-blue-600 text-white" 
+                  : "text-slate-300 hover:bg-slate-800"
+              )}
+            >
+              <item.icon className="w-5 h-5" />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="p-4 border-t border-slate-700">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-slate-800 transition-all"
+          >
+            <LogOut className="w-5 h-5" />
+            Logout
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -481,6 +503,7 @@ function Announcements() {
 
 export default function AdminPanel() {
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const renderContent = () => {
     switch (activeSection) {
@@ -503,18 +526,34 @@ export default function AdminPanel() {
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar 
         activeSection={activeSection} 
-        setActiveSection={setActiveSection} 
+        setActiveSection={setActiveSection}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         onLogout={handleLogout}
       />
-      <main className="flex-1 p-8 overflow-y-auto">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-        >
-          {renderContent()}
-        </motion.div>
-      </main>
+      <div className="flex-1 flex flex-col min-h-screen">
+        <header className="lg:hidden bg-slate-900 text-white p-4 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-2 text-lg font-extrabold">
+            <GraduationCap className="w-6 h-6 text-blue-400" />
+            <span>Bright<span className="text-blue-400">Minds</span></span>
+          </div>
+          <button 
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 hover:bg-slate-800 rounded-lg"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </header>
+        <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+          >
+            {renderContent()}
+          </motion.div>
+        </main>
+      </div>
     </div>
   );
 }
